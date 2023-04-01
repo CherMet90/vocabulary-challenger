@@ -130,3 +130,4 @@ dmypy.json
 
 src/gpt_response.txt
 src/words_to_review.txt
+src/score.txt

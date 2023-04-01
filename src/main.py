@@ -65,6 +65,8 @@ def update_review_date(word, next_review_date):
 def review_words(words, max_words=30):
     random.shuffle(words)
     count = 0
+    total_score = 0
+    previous_score = 0
     for word in words:
         if count >= max_words:
             break
@@ -82,6 +84,7 @@ def review_words(words, max_words=30):
         correct_guess = guessed_word.lower() == word.lower()
         hidden_word = word[0] + '*' * (len(word) - 1)
         num_hidden_letters = len(word) - 1
+        score = 0
         while not correct_guess:
             print(f"Sorry, the correct word is '{hidden_word}'.")
             if num_hidden_letters > 0:
@@ -89,13 +92,23 @@ def review_words(words, max_words=30):
                 hidden_word = word[0] + '*' * num_hidden_letters + word[-(len(word)-num_hidden_letters-1):]
             guessed_word = input("Enter the word that matches the definition: ")
             correct_guess = guessed_word.lower() == word.lower()
-            if correct_guess:
-                print("Correct! Good job!")
-            else:
-                print("Let's try again!")
+        print("Correct! Good job!")
+        score += (num_hidden_letters * 10)
+        total_score += score
+            #else:
+            #    print("Let's try again!")
         next_review_date = update_review_date(word, calculate_next_review_date(num_hidden_letters))
         print('The next review date: ')
         print(update_review_date(word, next_review_date))
+    with open('score.txt', 'r') as f:
+        try:
+            previous_score = int(f.read())
+        except ValueError:
+            pass
+    with open('score.txt', 'w') as f:
+        f.write(str(total_score))
+    print(f"Total score for current game: {total_score}")
+    print(f"Total score from previous games: {previous_score}")
 
 
 if __name__ == '__main__':
