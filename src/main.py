@@ -94,7 +94,7 @@ def review_words(words, max_words=30):
             guessed_word = input("Enter the word that matches the definition: ")
             correct_guess = guessed_word.lower() == word.lower()
             print("Let's try again!")
-        print(f"{Back.GREEN}{Fore.WHITE}Correct! Good job!{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}Correct! Good job!{Style.RESET_ALL}")
         score += (num_hidden_letters * 10)
         total_score += score
         print(f"You saved {Fore.YELLOW}{num_hidden_letters}{Style.RESET_ALL} asterisk(s) and earned {Fore.YELLOW}{score}{Style.RESET_ALL} points.")
