@@ -3,6 +3,7 @@ import datetime
 import random
 import re
 import os
+from colorama import init, Fore, Style, Back
 
 
 def get_gpt_definition(word):
@@ -83,23 +84,23 @@ def review_words(words, max_words=30):
         guessed_word = input("Enter the word that matches the definition: ")
         correct_guess = guessed_word.lower() == word.lower()
         hidden_word = word[0] + '*' * (len(word) - 1)
-        num_hidden_letters = len(word) - 1
+        num_hidden_letters = len(word)
         score = 0
         while not correct_guess:
-            print(f"Sorry, the correct word is '{hidden_word}'.")
+            print(f"{Back.RED}{Fore.WHITE}Sorry, the correct word is '{hidden_word}'.{Style.RESET_ALL}")
             if num_hidden_letters > 0:
                 num_hidden_letters -= 1
                 hidden_word = word[0] + '*' * num_hidden_letters + word[-(len(word)-num_hidden_letters-1):]
             guessed_word = input("Enter the word that matches the definition: ")
             correct_guess = guessed_word.lower() == word.lower()
-        print("Correct! Good job!")
+            print("Let's try again!")
+        print(f"{Back.GREEN}{Fore.WHITE}Correct! Good job!{Style.RESET_ALL}")
         score += (num_hidden_letters * 10)
         total_score += score
-            #else:
-            #    print("Let's try again!")
+        print(f"You saved {Fore.YELLOW}{num_hidden_letters}{Style.RESET_ALL} asterisk(s) and earned {Fore.YELLOW}{score}{Style.RESET_ALL} points.")
         next_review_date = update_review_date(word, calculate_next_review_date(num_hidden_letters))
-        print('The next review date: ')
-        print(update_review_date(word, next_review_date))
+        print(f"The next review date for {Back.BLUE}{Fore.WHITE}'{word}'{Style.RESET_ALL} is {Fore.CYAN}{next_review_date}{Style.RESET_ALL}\n")
+        
     with open('score.txt', 'r') as f:
         try:
             previous_score = int(f.read())
@@ -107,7 +108,7 @@ def review_words(words, max_words=30):
             pass
     with open('score.txt', 'w') as f:
         f.write(str(total_score))
-    print(f"Total score for current game: {total_score}")
+    print(f"\nYour total score is {Fore.YELLOW}{total_score}{Style.RESET_ALL} points.")
     print(f"Total score from previous games: {previous_score}")
 
 
@@ -115,5 +116,7 @@ if __name__ == '__main__':
     # Get the list of words to review
     with open('words_to_review.txt', 'r') as f:
         words = [line.strip() for line in f.readlines()]
+    # Initialize colorama
+    init()
     review_words(words)
     input("No more words for the game")
