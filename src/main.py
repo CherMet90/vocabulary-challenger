@@ -1,10 +1,12 @@
-import requests
 import datetime
+import os
 import random
 import re
-import os
-from colorama import init, Fore, Style, Back
+
 import inflect
+import requests
+from colorama import Back, Fore, Style, init
+
 
 class Word:
     def __init__(self, word, next_review_date):
