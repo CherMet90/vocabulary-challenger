@@ -9,10 +9,13 @@ from colorama import Back, Fore, Style, init
 
 
 class Word:
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    
     def __init__(self, word, next_review_date):
         self.word = word
         self.next_review_date = next_review_date
         self.definition = None
+        self.origin = None
 
         if self.next_review_date is None:
             self.next_review_date = datetime.date.today()
@@ -29,15 +32,12 @@ class Word:
                     f.write(line)
             f.truncate()
 
-    def get_gpt_definition(self):
-        #print(f"Getting definition for {Back.BLUE}{Fore.WHITE}'{self.word}'{Style.RESET_ALL}")
-        # Use the OpenAI API to get the definition
-        OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    def get_gpt_definition(self): # Use the OpenAI API to get the definition
         response = requests.post(
             "https://api.openai.com/v1/completions",
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {OPENAI_API_KEY}"
+                "Authorization": f"Bearer {self.OPENAI_API_KEY}"
             },
             json={
                 "prompt": f"Imagine you are dictionary for B1 english learners. Give an example sentence for '{self.word}' and provide some common synonyms.",
@@ -56,6 +56,25 @@ class Word:
         self.definition = re.sub(re.compile(
             re.escape(self.word), re.IGNORECASE), asterisks, definition)
 
+    def make_one_more_request(self):
+        response = requests.post(
+            "https://api.openai.com/v1/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.OPENAI_API_KEY}"
+            },
+            json={
+                "prompt": f"Tell me about the origin of the word '{self.word}'.",
+                "model": 'text-davinci-002',
+                "max_tokens": 500,
+                "temperature": 0.5,
+                "n": 1
+            }
+        )
+        response_data = response.json()
+        self.origin = response_data['choices'][0]['text'].strip()
+        print(f"\n{Fore.GREEN}Origin of the word '{self.word}':{Style.RESET_ALL}")
+        print(self.origin)
 
 # Calculate the next review date for a word
 def calculate_next_review_date(word_instance, num_hidden_letters):
@@ -115,6 +134,11 @@ def play_game():
         print(
             f"You saved {Fore.YELLOW}{num_hidden_letters}{Style.RESET_ALL} asterisk(s) and earned {Fore.YELLOW}{score}{Style.RESET_ALL} points.")
         total_score += score
+        
+        if num_hidden_letters == 0:
+            # All asterisks have been removed, so ask for the word's origin
+            word_instance.make_one_more_request()
+        
         calculate_next_review_date(word_instance, num_hidden_letters)
         word_instance.update_review_date()
         print(
