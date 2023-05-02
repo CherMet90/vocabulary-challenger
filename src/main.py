@@ -11,17 +11,22 @@ from requests.exceptions import SSLError
 
 
 class Word:
-    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+    __OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
     def __init__(self, word, next_review_date):
         self.word = word
         self.next_review_date = next_review_date
-        self.definition = None
+        self._definition = None
         self.origin = None
 
         if self.next_review_date is None:
             self.next_review_date = datetime.date.today()
-        self.get_gpt_definition()
+
+    @property
+    def definition(self):
+        if self._definition is None:
+            self.get_gpt_definition()
+        return self._definition
 
     def update_review_date(self):
         with open('words_to_review.txt', 'r+') as f:
@@ -40,7 +45,7 @@ class Word:
                     "https://api.openai.com/v1/completions",
                     headers={
                         "Content-Type": "application/json",
-                        "Authorization": f"Bearer {self.OPENAI_API_KEY}"
+                        "Authorization": f"Bearer {self.__OPENAI_API_KEY}"
                     },
                     json={
                         "prompt": f"Imagine you are dictionary for B1 english learners. Give an example sentence for '{self.word}' and provide some common synonyms.",
@@ -66,7 +71,7 @@ class Word:
         definition = response_data['choices'][0]['text'].strip()
         # Replace the word with asterisks in the definition, case-insensitive
         asterisks = '*' * len(self.word)
-        self.definition = re.sub(re.compile(
+        self._definition = re.sub(re.compile(
             re.escape(self.word), re.IGNORECASE), asterisks, definition)
 
     def make_one_more_request(self):
@@ -74,7 +79,7 @@ class Word:
             "https://api.openai.com/v1/completions",
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.OPENAI_API_KEY}"
+                "Authorization": f"Bearer {self.__OPENAI_API_KEY}"
             },
             json={
                 "prompt": f"Tell me about the origin of the word '{self.word}'.",
