@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import random
 import re
@@ -37,7 +38,7 @@ class Word:
                     self.word) else f.write(line)
             f.truncate()
 
-    def get_gpt_definition(self):  # Use the OpenAI API to get the definition
+    def send_request(self, prompt, max_tokens, temperature):
         retry = True
         while retry:
             try:
@@ -48,10 +49,10 @@ class Word:
                         "Authorization": f"Bearer {self.__OPENAI_API_KEY}"
                     },
                     json={
-                        "prompt": f"Imagine you are dictionary for B1 english learners. Give an example sentence for '{self.word}' and provide some common synonyms.",
-                        "model": 'text-davinci-002',
-                        "max_tokens": 500,
-                        "temperature": 0.35,
+                        "prompt": prompt,
+                        "model": 'text-davinci-003',
+                        "max_tokens": max_tokens,
+                        "temperature": temperature,
                         "n": 1
                     }
                 )
@@ -59,40 +60,35 @@ class Word:
             except SSLError as e:
                 print(f"An SSL error occurred: {e}")
                 retry = input("Retry request? (y/n): ").lower() == 'y'
-                return
+                return None
             except Exception as e:
                 print(f"An error occurred: {e}")
                 print(traceback.format_exc())
-                return
+                return None
 
-        with open('gpt_response.txt', 'w', encoding='utf-8') as f:
-            f.write(response.text)
-        response_data = response.json()
-        definition = response_data['choices'][0]['text'].strip()
-        # Replace the word with asterisks in the definition, case-insensitive
-        asterisks = '*' * len(self.word)
-        self._definition = re.sub(re.compile(
-            re.escape(self.word), re.IGNORECASE), asterisks, definition)
+        # Save response to a file for debugging
+        with open('response_debug.json', 'w') as f:
+            json.dump(response.json(), f, indent=2)
+
+        return response.json()
+
+    def get_gpt_definition(self):
+        prompt = f"Imagine you are dictionary for B1 english learners. Give an example sentence for '{self.word}' and provide some common synonyms."
+        response_data = self.send_request(prompt, 500, 0.35)
+        if response_data is not None:
+            definition = response_data['choices'][0]['text'].strip()
+            asterisks = '*' * len(self.word)
+            self._definition = re.sub(re.compile(
+                re.escape(self.word), re.IGNORECASE), asterisks, definition)
 
     def make_one_more_request(self):
-        response = requests.post(
-            "https://api.openai.com/v1/completions",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.__OPENAI_API_KEY}"
-            },
-            json={
-                "prompt": f"Tell me about the origin of the word '{self.word}'.",
-                "model": 'text-davinci-002',
-                "max_tokens": 500,
-                "temperature": 0.5,
-                "n": 1
-            }
-        )
-        response_data = response.json()
-        self.origin = response_data['choices'][0]['text'].strip()
-        print(f"\n{Fore.GREEN}Origin of the word '{self.word}':{Style.RESET_ALL}")
-        print(self.origin)
+        prompt = f"Tell me about the origin of the word '{self.word}'."
+        response_data = self.send_request(prompt, 500, 0.5)
+        if response_data is not None:
+            self.origin = response_data['choices'][0]['text'].strip()
+            print(
+                f"\n{Fore.GREEN}Origin of the word '{self.word}':{Style.RESET_ALL}")
+            print(self.origin)
 
 # Calculate the next review date for a word
 
@@ -142,8 +138,6 @@ def play_game():
 
         word = word.split(',')[0]
         word_instance = Word(word, next_review_date)
-        if word_instance.definition is None:
-            continue
 
         correct_guess = False
         num_hidden_letters = len(word)
